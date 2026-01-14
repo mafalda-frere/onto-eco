@@ -1,0 +1,177 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>Ecosystem – Energy Simulation</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
+  canvas { max-width: 980px; }
+  ul { margin-top:6px; }
+</style>
+</head>
+<body>
+
+<h2>Ecosystem – Simulation (énergie)</h2>
+
+<div class="row">
+  <select id="species"></select>
+  <button onclick="addIndividual()">Ajouter</button>
+  <button onclick="autoEats()">Auto eats (edges)</button>
+  <button onclick="startSim()">START</button>
+</div>
+
+<h3>Populations (toutes espèces sur un graphe)</h3>
+<canvas id="popChart"></canvas>
+
+<h3>Individus</h3>
+<ul id="nodes"></ul>
+
+<h3>Relations eats</h3>
+<ul id="edges"></ul>
+
+<script>
+function short(u){ return u.split('#').pop(); }
+
+async function loadSpecies(){
+  const sp = await fetch('/api/species').then(r=>r.json());
+  species.innerHTML = "";
+  sp.forEach(u=>{
+    const o = document.createElement('option');
+    o.value = u;
+    o.textContent = short(u);
+    species.appendChild(o);
+  });
+}
+
+async function refresh(){
+  const s = await fetch('/api/state').then(r=>r.json());
+
+  nodes.innerHTML="";
+  s.nodes.forEach(n=>{
+    const li=document.createElement('li');
+    const e = (n.energy===null || n.energy===undefined) ? "" : (" (E="+n.energy+")");
+    li.textContent = short(n.id) + " → " + (n.types||[]).join(", ") + e;
+    nodes.appendChild(li);
+  });
+
+  edges.innerHTML="";
+  if((s.edges||[]).length === 0){
+    const li=document.createElement('li');
+    li.textContent="(aucun lien eats)";
+    edges.appendChild(li);
+  } else {
+    s.edges.forEach(e=>{
+      const li=document.createElement('li');
+      li.textContent = short(e.source) + " eats " + short(e.target);
+      edges.appendChild(li);
+    });
+  }
+}
+
+async function addIndividual(){
+  await fetch('/api/add_individual', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({species: species.value})
+  });
+  refresh();
+}
+
+async function autoEats(){
+  await fetch('/api/auto_eats', {method:'POST'});
+  refresh();
+}
+
+// ===== Chart unique multi-espèces =====
+const palette = [
+  "#e6194b","#3cb44b","#ffe119","#4363d8","#f58231","#911eb4",
+  "#46f0f0","#f032e6","#bcf60c","#fabebe","#008080","#e6beff",
+  "#9a6324","#fffac8","#800000","#aaffc3","#808000","#ffd8b1",
+  "#000075","#808080"
+];
+
+function colorFor(label){
+  let h = 0;
+  for(let i=0;i<label.length;i++) h = (h*31 + label.charCodeAt(i)) >>> 0;
+  return palette[h % palette.length];
+}
+
+let popChart = null;
+let timer = null;
+
+function resetChart(){
+  const ctx = document.getElementById('popChart').getContext('2d');
+  if(popChart){ try { popChart.destroy(); } catch(e){} }
+
+  popChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels: [], datasets: [] },
+    options: {
+      animation: false,
+      responsive: true,
+      interaction: { mode: 'nearest', intersect: false },
+      scales: {
+        x: { title: { display: true, text: 't' } },
+        y: { title: { display: true, text: 'population' }, beginAtZero: true }
+      }
+    }
+  });
+}
+
+function ensureDataset(label){
+  const existing = popChart.data.datasets.find(d => d.label === label);
+  if(existing) return existing;
+  const c = colorFor(label);
+  const ds = {
+    label,
+    data: [],
+    borderColor: c,
+    backgroundColor: c,
+    borderWidth: 2,
+    pointRadius: 0,
+    tension: 0.1
+  };
+  popChart.data.datasets.push(ds);
+  return ds;
+}
+
+async function startSim(){
+  resetChart();
+  await fetch('/api/start', {method:'POST'});
+  if(timer) clearInterval(timer);
+  timer = setInterval(stepSim, 250);
+}
+
+async function stepSim(){
+  const r = await fetch('/api/step', {method:'POST'}).then(r=>r.json());
+  if(!r.ok) return;
+
+  const history = r.history || {};
+  const t = r.t || 0;
+
+  popChart.data.labels = Array.from({length: t+1}, (_,i)=>i);
+
+  Object.entries(history).forEach(([sp, values])=>{
+    const label = short(sp);
+    const ds = ensureDataset(label);
+    ds.data = values;
+  });
+
+  popChart.update();
+
+  if(r.status){
+    clearInterval(timer);
+    timer = null;
+    alert("FIN : " + r.status);
+  }
+
+  refresh();
+}
+
+loadSpecies().then(() => { resetChart(); refresh(); });
+</script>
+
+</body>
+</html>
