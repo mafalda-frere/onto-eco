@@ -1,0 +1,4 @@
+Flask>=2.2
+rdflib>=6.0
+owlrl>=6.0
+requests>=2.31
