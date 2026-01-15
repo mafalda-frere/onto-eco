@@ -10,16 +10,16 @@ SIMULATION_PARAMS = {
     "GAIN_PLANT": 4,
     "GAIN_PREY": 5,
 
-    "E_REPRO": 8,
-    "REPRO_COST": 4,
+    "E_REPRO": 9,
+    "REPRO_COST": 5,
 
-    "P_REPRO_PLANT": 0.20,
-    "K_PLANT": 30,
+    "P_REPRO_PLANT": 0.70,
+    "K_PLANT": 50,
 
-    "P_REPRO_HERB": 0.25,
-    "P_REPRO_CARN": 0.20,
+    "P_REPRO_HERB": 0.22,
+    "P_REPRO_CARN": 0.10,
 
-    "HUNT_PROB": 0.55,
+    "HUNT_PROB": 0.35,
 
     "stable_window": 10,
     "stable_range": 1,

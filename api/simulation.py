@@ -107,6 +107,33 @@ def build_simulation_bp(ctx):
         ctx["state"].running = True
 
         return jsonify({"ok": True})
+    
+    @bp.post("/reset")
+    def api_reset():
+        # stop simulation
+        ctx["state"].running = False
+        ctx["state"].frozen_reasoner = False
+        ctx["state"].t = 0
+
+        # clear simulation state
+        ctx["state"].active.clear()
+        ctx["state"].energy.clear()
+        ctx["state"].history.clear()
+        ctx["state"].known_species.clear()
+
+        # clear mappings
+        ctx["indiv_species"].clear()
+        ctx["species_traits"].clear()
+        ctx["species_prey"].clear()
+
+        # clear overlay graph (individuals + eats edges)
+        ctx["overlay_g"].remove((None, None, None))
+
+        # mark reasoner dirty
+        ctx["reasoner"].mark_dirty()
+
+        return jsonify({"ok": True})
+
 
     @bp.post("/step")
     def api_step():

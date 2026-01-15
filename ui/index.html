@@ -2,34 +2,97 @@
 <html>
 <head>
 <meta charset="utf-8"/>
-<title>Ecosystem – Energy Simulation</title>
+<title>Ontology-Driven Ecosystem Simulation</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
-  canvas { max-width: 980px; }
-  ul { margin-top:6px; }
+body {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  margin: 20px;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+/* === MAIN LAYOUT === */
+.main-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+/* LEFT: graph */
+.left-panel {
+  flex: 0 0 60%;
+}
+
+.left-panel canvas {
+  max-width: 100%;
+  height: 360px !important;
+}
+
+/* RIGHT: lists */
+.right-panel {
+  flex: 0 0 40%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.panel-block {
+  border: 1px solid #ddd;
+  padding: 10px;
+  border-radius: 6px;
+  background: #fafafa;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.panel-block ul {
+  margin: 6px 0 0 0;
+  padding-left: 18px;
+}
+
 </style>
 </head>
 <body>
 
-<h2>Ecosystem – Simulation (énergie)</h2>
+<h2>Ontology-Driven Ecosystem Simulation</h2>
 
 <div class="row">
   <select id="species"></select>
-  <button onclick="addIndividual()">Ajouter</button>
-  <button onclick="autoEats()">Auto eats (edges)</button>
-  <button onclick="startSim()">START</button>
+  <button onclick="addIndividual()">Add individual</button>
+  <button onclick="autoEats()">Infer predator-prey relations</button>
+  <button onclick="startSim()">Start simulation</button>
+  <button onclick="resetAll()">Reset</button>
 </div>
 
-<h3>Populations (toutes espèces sur un graphe)</h3>
-<canvas id="popChart"></canvas>
+<div class="main-layout">
 
-<h3>Individus</h3>
-<ul id="nodes"></ul>
+  <!-- LEFT: Graph -->
+  <div class="left-panel">
+    <h3>Population Dynamics</h3>
+    <canvas id="popChart"></canvas>
+  </div>
 
-<h3>Relations eats</h3>
-<ul id="edges"></ul>
+  <!-- RIGHT: Individuals + Eats -->
+  <div class="right-panel">
+    <div class="panel-block">
+      <h3>Individuals</h3>
+      <ul id="nodes"></ul>
+    </div>
+
+    <div class="panel-block">
+      <h3>Predator–prey relations</h3>
+      <ul id="edges"></ul>
+    </div>
+  </div>
+
+</div>
 
 <script>
 function short(u){ return u.split('#').pop(); }
@@ -43,6 +106,32 @@ async function loadSpecies(){
     o.textContent = short(u);
     species.appendChild(o);
   });
+}
+
+async function resetAll(){
+  if(timer){
+    clearInterval(timer);
+    timer = null;
+  }
+
+  await fetch('/api/reset', { method: 'POST' });
+
+  resetChart();
+  refresh();
+}
+
+async function resetAll(){
+  if(!confirm("Reset the simulation and remove all individuals?")) return;
+
+  if(timer){
+    clearInterval(timer);
+    timer = null;
+  }
+
+  await fetch('/api/reset', { method: 'POST' });
+
+  resetChart();
+  refresh();
 }
 
 async function refresh(){
@@ -59,7 +148,7 @@ async function refresh(){
   edges.innerHTML="";
   if((s.edges||[]).length === 0){
     const li=document.createElement('li');
-    li.textContent="(aucun lien eats)";
+    li.textContent="(no predator–prey relations)";
     edges.appendChild(li);
   } else {
     s.edges.forEach(e=>{
@@ -103,7 +192,9 @@ let timer = null;
 
 function resetChart(){
   const ctx = document.getElementById('popChart').getContext('2d');
-  if(popChart){ try { popChart.destroy(); } catch(e){} }
+  if(popChart){ 
+    try { popChart.destroy(); } catch(e){} 
+  }
 
   popChart = new Chart(ctx, {
     type: 'line',
@@ -111,14 +202,27 @@ function resetChart(){
     options: {
       animation: false,
       responsive: true,
+      maintainAspectRatio: false,
       interaction: { mode: 'nearest', intersect: false },
       scales: {
         x: { title: { display: true, text: 't' } },
-        y: { title: { display: true, text: 'population' }, beginAtZero: true }
+        y: {
+          title: { display: true, text: 'population' },
+          beginAtZero: true,
+          ticks: { precision: 0 }
+        }
+      },
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { boxWidth: 12 }
+        }
       }
     }
   });
 }
+
+
 
 function ensureDataset(label){
   const existing = popChart.data.datasets.find(d => d.label === label);
@@ -164,7 +268,7 @@ async function stepSim(){
   if(r.status){
     clearInterval(timer);
     timer = null;
-    alert("FIN : " + r.status);
+    alert("Simulation finished: " + r.status);
   }
 
   refresh();
