@@ -7,6 +7,10 @@ Instead of hard-coding species behavior and trophic relations, the simulation **
 - predator–prey relationships,
 - ecosystem structure.
 
+## Simulation demo
+
+![Ontology-driven ecosystem simulation](demo/demo.gif)
+
 ---
 
 ## Ontology-First Approach

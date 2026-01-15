@@ -21,7 +21,7 @@ SIMULATION_PARAMS = {
 
     "HUNT_PROB": 0.35,
 
-    "stable_window": 10,
+    "stable_window": 15,
     "stable_range": 1,
     "max_steps": 300
 }
