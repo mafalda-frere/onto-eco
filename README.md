@@ -13,6 +13,39 @@ Instead of hard-coding species behavior and trophic relations, the simulation **
 
 ---
 
+## Running the Project
+
+### 1. Clone the repository
+
+```bash
+git clone git@github.com:mafalda-frere/onto-eco.git
+cd onto-eco
+```
+
+### 2. Create and activate the Conda environment
+
+```bash
+conda create -n eco_env python=3.10
+conda activate eco_env
+```
+
+### 3. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Launch the application
+
+```bash
+python app.py
+```
+
+Then open your browser at:
+http://127.0.0.1:5000/
+
+---
+
 ## Ontology-First Approach
 
 The project is built around the **African Wildlife Ontology (AWO)**.
@@ -109,35 +142,3 @@ they are inferred from ontology restrictions such as `eats some Herbivore`.
 |------|------|
 | `index.html` | Interactive visualization (populations & relations) |
 
----
-
-## Running the Project
-
-### 1. Clone the repository
-
-```bash
-git clone git@github.com:mafalda-frere/onto-eco.git
-cd onto-eco
-```
-
-### 2. Create and activate the Conda environment
-
-```bash
-conda create -n eco_env python=3.10
-conda activate eco_env
-```
-
-### 3. Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Launch the application
-
-```bash
-python app.py
-```
-
-Then open your browser at:
-http://127.0.0.1:5000/
